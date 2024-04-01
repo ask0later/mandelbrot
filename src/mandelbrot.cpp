@@ -46,50 +46,49 @@ void Mandelbrot(SDL_Window** window, SDL_Renderer** renderer, SDL_Texture** text
 
 int CalculatePixelsAVX2(Uint8* pixels, xOy_set* set)
 {
-    __m256 max_radius_2 = _mm256_set1_ps(MAX_RADIUS_2);
+    float8 max_radius_2 = set_single_float8(MAX_RADIUS_2);
     
     int index_pixel = 0;
 
     for (int index_y = 0; index_y < HEIGHT; index_y ++)
     {
-        __m256 y_0 = _mm256_set1_ps(((float) (HEIGHT / 2) - (float) index_y + (float) set->offset_y) * dy * set->scale);
+        float8 y_0 = set_single_float8(((HEIGHT / 2) - index_y + set->offset_y) * dy * set->scale);
                                                // offset on mid height
 
         for (int index_x = 0; index_x < WIDTH; index_x += 8)
         {  
-            int tmp = (float) index_x - (float) (WIDTH / 2) + (float) set->offset_x;
-            __m256 x_0 = _mm256_add_ps(
-                                       _mm256_set1_ps(tmp),
-                                       _mm256_set_ps(7.f, 6.f, 5.f, 4.f, 3.f, 2.f, 1.f, 0.f));
+            int tmp = index_x - (WIDTH / 2) + set->offset_x;
+            float8 x_0 = add_float8(
+                                       set_single_float8(tmp),
+                                       set_each_float8(7.f, 6.f, 5.f, 4.f, 3.f, 2.f, 1.f, 0.f));
             
-            x_0 = _mm256_mul_ps(x_0, _mm256_set1_ps(dx * set->scale));
+            x_0 = mul_float8(x_0, set_single_float8(dx * set->scale));
 
-            __m256 x = x_0;
-            __m256 y = y_0;
+            float8 x = x_0;
+            float8 y = y_0;
 
-            __m256i iteration_vector = _mm256_set1_epi32(0);
+            int8 iteration_vector = set_single_int8(0);
             
             int step = 0;
 
             for (;step < MAX_STEPS; step++)
             {
-                __m256 x2 = _mm256_mul_ps(x, x);
-                __m256 y2 = _mm256_mul_ps(y, y);
-                __m256 xy = _mm256_mul_ps(x, y);
+                float8 x2 = mul_float8(x, x);
+                float8 y2 = mul_float8(y, y);
+                float8 xy = mul_float8(x, y);
+                float8 r2 = add_float8(x2, y2);
 
-                __m256 r2  = _mm256_add_ps(x2, y2);
-                __m256 cmp  = _mm256_cmp_ps (max_radius_2, r2, _CMP_GE_OQ);         // filled with -1 if the condition is met, otherwise 0
-                                                                                    //          0xFF...F                           0x00...0             
+                float8 cmp  = cmp_float8(max_radius_2, r2, _CMP_GE_OQ);         // filled with -1 if the condition is met, otherwise 0
+                                                                                //          0xFF...F                           0x00...0             
 
-                iteration_vector = _mm256_sub_epi32(iteration_vector,
-                                                    _mm256_castps_si256(cmp));      // if the condition is met, then plus 1 iteration is added
+                iteration_vector = sub_int8(iteration_vector, cast_float_to_int(cmp));      // if the condition is met, then plus 1 iteration is added
                                                                                     
 
-                if (!_mm256_movemask_ps(cmp))                                                                              //          0xFF...F                           0x00...0             
+                if (!mask_float8(cmp))                                                                              //          0xFF...F                           0x00...0             
                     break;
 
-                x = _mm256_add_ps(_mm256_sub_ps(x2, y2), x_0);          // x = x * x - y * y + x_0;
-                y = _mm256_add_ps(_mm256_add_ps(xy, xy), y_0);          // y = 2 * (x * y) + y_0;
+                x = add_float8(sub_float8(x2, y2), x_0);          // x = x * x - y * y + x_0;
+                y = add_float8(add_float8(xy, xy), y_0);          // y = 2 * (x * y) + y_0;
             }
 
 
@@ -111,11 +110,11 @@ int CalculatePixels(Uint8* pixels, xOy_set* set)
 
     for (int index_y = 0; index_y < HEIGHT; index_y++)
     {
-        float y_0 = ((float) (HEIGHT / 2) - (float) index_y) * dy * set->scale  + ((float) set->offset_y) * dy;           // offset on mid height
+        float y_0 = ((HEIGHT / 2) - index_y) * dy * set->scale + set->offset_y * dy;           // offset on mid height
 
         for (int index_x = 0; index_x < WIDTH; index_x++)
         {
-            float x_0 = ((float) index_x - (float) (WIDTH / 2)) * dx * set->scale + ((float) set->offset_x) * dx;       // offset on mid width
+            float x_0 = (index_x - (WIDTH / 2)) * dx * set->scale + set->offset_x * dx;       // offset on mid width
 
             float x = x_0, y = y_0;
             

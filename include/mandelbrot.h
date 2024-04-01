@@ -1,6 +1,27 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
+#define float8 __m256
+#define int8   __m256i
+
+#define add_float8 _mm256_add_ps
+#define sub_float8 _mm256_sub_ps
+#define mul_float8 _mm256_mul_ps
+
+#define set_single_float8 _mm256_set1_ps
+#define set_each_float8 _mm256_set_ps
+
+#define cmp_float8 _mm256_cmp_ps
+
+#define cast_float_to_int _mm256_castps_si256
+
+#define mask_float8 _mm256_movemask_ps
+
+
+
+#define sub_int8 _mm256_sub_epi32
+#define set_single_int8 _mm256_set1_epi32
+
 enum ControlEvent
 {
     QUIT = 78,
@@ -10,7 +31,9 @@ enum ControlEvent
 const int WIDTH = 1000;
 const int HEIGHT = 800;
 const float SCALE_VALUE = 1.1f;
-const float dx = 1.f / (float) WIDTH, dy = 1.f / (float) HEIGHT;
+
+const float dx = 1.f / WIDTH, dy = 1.f / HEIGHT;
+
 const int MAX_STEPS = 256;
 const int MAX_NUM_FPS_DIGITS = 10;
 
